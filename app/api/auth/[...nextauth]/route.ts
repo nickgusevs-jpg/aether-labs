@@ -3,15 +3,12 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import { verify } from '@/lib/otpStore'
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
-      // TODO: INSERT YOUR GOOGLE OAUTH CLIENT ID/SECRET HERE (via .env.local - see .env.example)
       clientId: process.env.GOOGLE_CLIENT_ID ?? '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? ''
     }),
-    // Email + 6-digit OTP. The actual code issuing/sending happens in /api/auth/otp/request;
-    // this provider only checks the code the user typed against lib/otpStore.
     CredentialsProvider({
       id: 'otp',
       name: 'Email code',
@@ -28,7 +25,7 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   session: { strategy: 'jwt' },
-  pages: { signIn: '/' }, // the sign-in UI is the AuthModal on the landing page, not a separate route
+  pages: { signIn: '/' },
   secret: process.env.NEXTAUTH_SECRET
 }
 
