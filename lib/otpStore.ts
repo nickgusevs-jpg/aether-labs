@@ -3,7 +3,7 @@ import { Resend } from 'resend'
 // Хранилище кодов в памяти (на 10 минут)
 const store = new Map<string, { code: string; expiresAt: number }>()
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_key_for_build");
 
 /**
  * Генерирует 6-значный OTP код для email
