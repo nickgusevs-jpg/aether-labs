@@ -7,6 +7,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swa
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://aetherlabs.world'),
   title: 'AETHER // LABS - Global B2B & B2C Lead Generation',
   description: 'Automated lead scraping across 199 countries, HWID-secured licensing, and a built-in ROI calculator.'
 }

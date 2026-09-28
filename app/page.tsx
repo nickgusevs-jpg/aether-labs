@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import AboutSection from '@/components/AboutSection'
 import BentoGrid from '@/components/BentoGrid'
 import Footer from '@/components/Footer'
