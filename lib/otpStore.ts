@@ -1,19 +1,46 @@
 import { Resend } from 'resend'
+import crypto from 'node:crypto'
 
-// Хранилище кодов в памяти (на 10 минут)
-const store = new Map<string, { code: string; expiresAt: number }>()
+interface OtpRecord {
+  code: string
+  expiresAt: number
+  attempts: number
+}
 
-const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_key_for_build");
+// Хранилище кодов в памяти
+const store = new Map<string, OtpRecord>()
+
+// Периодическая очистка просроченных кодов (раз в 5 минут)
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now()
+    for (const [email, record] of store.entries()) {
+      if (now > record.expiresAt) {
+        store.delete(email)
+      }
+    }
+  }, 5 * 60 * 1000)
+}
+
+const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_key_for_build")
 
 /**
- * Генерирует 6-значный OTP код для email
+ * Генерирует 6-значный OTP код для email (Crypto-safe)
  */
 export function issue(email: string): string {
   const normalizedEmail = email.toLowerCase().trim()
-  const code = Math.floor(100000 + Math.random() * 900000).toString()
-  const expiresAt = Date.now() + 10 * 60 * 1000 // Код действителен 10 минут
+  
+  // Безопасная генерация от 100000 до 999999
+  const code = crypto.randomInt(100000, 1000000).toString()
+  const expiresAt = Date.now() + 10 * 60 * 1000 // 10 минут
 
-  store.set(normalizedEmail, { code, expiresAt })
+  // Сохраняем код и сбрасываем счетчик попыток
+  store.set(normalizedEmail, { 
+    code, 
+    expiresAt, 
+    attempts: 0 
+  })
+  
   return code
 }
 
@@ -25,15 +52,26 @@ export function verify(email: string, code: string): 'ok' | 'invalid' | 'expired
   const record = store.get(normalizedEmail)
 
   if (!record) return 'invalid'
+
+  // Проверка срока годности
   if (Date.now() > record.expiresAt) {
     store.delete(normalizedEmail)
     return 'expired'
   }
-  if (record.code !== code.trim()) {
+
+  // Защита от подбора (максимум 5 неудачных попыток)
+  if (record.attempts >= 5) {
+    store.delete(normalizedEmail)
     return 'invalid'
   }
 
-  // Стираем код после успешной проверки
+  // Проверка совпадения кода
+  if (record.code !== code.trim()) {
+    record.attempts += 1
+    return 'invalid'
+  }
+
+  // Успешная проверка — удаляем код из памяти
   store.delete(normalizedEmail)
   return 'ok'
 }
@@ -51,8 +89,8 @@ export async function sendOtp(email: string, code: string): Promise<void> {
   }
 
   try {
-    await resend.emails.send({
-      from: 'AETHER LABS <auth@aetherlabs.world>', // Стандартный тестовый адрес Resend
+    const { error } = await resend.emails.send({
+      from: 'AETHER LABS <auth@aetherlabs.world>',
       to: normalizedEmail,
       subject: `${code} — Ваш код входа AETHER // LABS`,
       html: `
@@ -66,6 +104,11 @@ export async function sendOtp(email: string, code: string): Promise<void> {
         </div>
       `
     })
+
+    if (error) {
+      console.error('Resend API returned error:', error)
+      throw new Error('Failed to send email via Resend API')
+    }
   } catch (error) {
     console.error('Ошибка отправки OTP через Resend:', error)
     throw new Error('Could not send email OTP')
