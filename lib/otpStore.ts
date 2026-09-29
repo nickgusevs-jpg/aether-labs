@@ -25,16 +25,15 @@ if (typeof setInterval !== 'undefined') {
 const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_key_for_build")
 
 /**
- * Генерирует 6-значный OTP код для email (Crypto-safe)
+ * Генерирует 6-значный OTP код для email
  */
 export function issue(email: string): string {
   const normalizedEmail = email.toLowerCase().trim()
   
-  // Безопасная генерация от 100000 до 999999
+  // Криптографически безопасная генерация 6 цифр
   const code = crypto.randomInt(100000, 1000000).toString()
   const expiresAt = Date.now() + 10 * 60 * 1000 // 10 минут
 
-  // Сохраняем код и сбрасываем счетчик попыток
   store.set(normalizedEmail, { 
     code, 
     expiresAt, 
@@ -53,25 +52,21 @@ export function verify(email: string, code: string): 'ok' | 'invalid' | 'expired
 
   if (!record) return 'invalid'
 
-  // Проверка срока годности
   if (Date.now() > record.expiresAt) {
     store.delete(normalizedEmail)
     return 'expired'
   }
 
-  // Защита от подбора (максимум 5 неудачных попыток)
   if (record.attempts >= 5) {
     store.delete(normalizedEmail)
     return 'invalid'
   }
 
-  // Проверка совпадения кода
   if (record.code !== code.trim()) {
     record.attempts += 1
     return 'invalid'
   }
 
-  // Успешная проверка — удаляем код из памяти
   store.delete(normalizedEmail)
   return 'ok'
 }
@@ -82,7 +77,6 @@ export function verify(email: string, code: string): 'ok' | 'invalid' | 'expired
 export async function sendOtp(email: string, code: string): Promise<void> {
   const normalizedEmail = email.toLowerCase().trim()
 
-  // Если включен отладочный режим — выводим в консоль
   if (process.env.OTP_DEBUG_LOG === 'true') {
     console.log(`[OTP DEBUG] Code for ${normalizedEmail}: ${code}`)
     return
@@ -107,7 +101,7 @@ export async function sendOtp(email: string, code: string): Promise<void> {
 
     if (error) {
       console.error('Resend API returned error:', error)
-      throw new Error('Failed to send email via Resend API')
+      throw new Error(`Resend Error: ${error.message}`)
     }
   } catch (error) {
     console.error('Ошибка отправки OTP через Resend:', error)
