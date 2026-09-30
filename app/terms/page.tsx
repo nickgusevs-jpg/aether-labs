@@ -1,16 +1,15 @@
 import React from 'react';
-import Link from 'next/link';
 
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-300 py-16 px-6 max-w-4xl mx-auto font-sans">
       <div className="mb-8">
-        <Link 
+        <a 
           href="/" 
           className="text-xs text-zinc-500 hover:text-emerald-400 transition-colors"
         >
           ← Back to Main
-        </Link>
+        </a>
       </div>
 
       <h1 className="text-3xl font-bold text-white mb-2">Terms of Service & Lead Disclaimer</h1>
