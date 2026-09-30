@@ -1,11 +1,9 @@
-'use client'
+export const dynamic = 'force-dynamic'
 
-import React, { useEffect, useState } from 'react'
-import dynamic from 'next/dynamic'
+import React from 'react'
 import { ShieldCheck, ArrowLeft, FileText, AlertTriangle, Scale, Lock, RefreshCw } from 'lucide-react'
 
-// Компонент контента
-function TermsContent() {
+export default function TermsPage() {
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-300 py-16 px-6 max-w-4xl mx-auto font-sans">
       <div className="mb-8">
@@ -120,14 +118,4 @@ function TermsContent() {
       </div>
     </div>
   )
-}
-
-// Отключаем SSR для этого компонента при сборке
-const DynamicTerms = dynamic(() => Promise.resolve(TermsContent), {
-  ssr: false,
-  loading: () => <div className="min-h-screen bg-[#09090b]" />
-})
-
-export default function TermsPage() {
-  return <DynamicTerms />
 }
