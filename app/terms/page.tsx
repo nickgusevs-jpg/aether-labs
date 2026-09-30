@@ -5,6 +5,9 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ShieldCheck, ArrowLeft, FileText, AlertTriangle, Scale, Lock, RefreshCw } from 'lucide-react'
 
+// Принудительно отключаем статический пререндер на Vercel для этой страницы
+export const dynamic = 'force-dynamic'
+
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-300 py-16 px-6 max-w-4xl mx-auto font-sans">
@@ -41,7 +44,7 @@ export default function TermsPage() {
         </p>
       </motion.div>
 
-      {/* Контентная сетка с задержкой анимаций */}
+      {/* Контент */}
       <div className="space-y-6 text-sm leading-relaxed text-zinc-400">
 
         {/* Section 1 */}
@@ -134,13 +137,13 @@ export default function TermsPage() {
             <div className="p-2 rounded-lg bg-zinc-800 text-purple-400">
               <Lock size={18} />
             </div>
-            <h2 className="text-lg font-bold text-white">4. User Responsibility & CAN-SPAM / GDPR Compliance</h2>
+            <h2 className="text-lg font-bold text-white">4. User Responsibility & Compliance</h2>
           </div>
           <p className="mb-3">
-            Users bear sole legal responsibility for ensuring that all outbound communication (cold emails, messages, calls) conducted using data obtained through Aether Labs strictly complies with applicable regional privacy regulations, including GDPR, CAN-SPAM Act, and local telecommunication rules.
+            Users bear sole legal responsibility for ensuring that all outbound communication conducted using data obtained through Aether Labs complies with applicable privacy regulations.
           </p>
           <p>
-            Aether Labs shall not be held liable for domain blacklisting, spam reports, or legal proceedings resulting from aggressive or non-compliant outbound marketing activities.
+            Aether Labs shall not be held liable for domain blacklisting, spam reports, or legal proceedings resulting from aggressive outbound marketing activities.
           </p>
         </motion.section>
 
@@ -158,7 +161,7 @@ export default function TermsPage() {
             <h2 className="text-lg font-bold text-white">5. Limitation of Liability</h2>
           </div>
           <p>
-            In no event shall Aether Labs, its developers, or affiliates be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, business disruption, or loss of data resulting from software downtime or data accuracy discrepancies.
+            In no event shall Aether Labs, its developers, or affiliates be liable for any indirect, incidental, special, or consequential damages resulting from software downtime or data accuracy discrepancies.
           </p>
         </motion.section>
 
