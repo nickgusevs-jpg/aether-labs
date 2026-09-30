@@ -1,5 +1,8 @@
 import React from 'react';
 
+// Принудительно указываем Next.js рендерить страницу динамически при запросе
+export const dynamic = 'force-dynamic';
+
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-300 py-16 px-6 max-w-4xl mx-auto font-sans">
