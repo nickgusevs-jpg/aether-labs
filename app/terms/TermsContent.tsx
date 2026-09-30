@@ -1,23 +1,32 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import dynamic from 'next/dynamic'
+import React from 'react'
+import { motion } from 'framer-motion'
 import { ShieldCheck, ArrowLeft, FileText, AlertTriangle, Scale, Lock, RefreshCw } from 'lucide-react'
 
-// Компонент контента
-function TermsContent() {
+export default function TermsContent() {
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-300 py-16 px-6 max-w-4xl mx-auto font-sans">
-      <div className="mb-8">
+      <motion.div 
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4 }}
+        className="mb-8"
+      >
         <a 
           href="/" 
           className="inline-flex items-center gap-2 text-xs text-zinc-400 hover:text-emerald-400 transition-colors"
         >
           <ArrowLeft size={14} /> Back to Main
         </a>
-      </div>
+      </motion.div>
 
-      <div className="mb-10">
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="mb-10"
+      >
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-4">
           <ShieldCheck size={14} /> Legal & Compliance
         </div>
@@ -27,10 +36,15 @@ function TermsContent() {
         <p className="text-xs text-zinc-500">
           Effective Date: September 2026 | Version 1.2
         </p>
-      </div>
+      </motion.div>
 
       <div className="space-y-6 text-sm leading-relaxed text-zinc-400">
-        <section className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-sm"
+        >
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 rounded-lg bg-zinc-800 text-emerald-400">
               <FileText size={18} />
@@ -43,9 +57,14 @@ function TermsContent() {
           <p>
             The software indexes records strictly as <strong>potential commercial leads</strong>. Aether Labs does not maintain a proprietary static database of personally identifying information (PII) without prior publicly available presence.
           </p>
-        </section>
+        </motion.section>
 
-        <section className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-sm"
+        >
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 rounded-lg bg-zinc-800 text-amber-400">
               <AlertTriangle size={18} />
@@ -63,9 +82,14 @@ function TermsContent() {
           <p className="text-xs text-zinc-500 italic">
             Outreach performance depends entirely on external factors outside Aether Labs&apos; control, including but not limited to the user&apos;s product value proposition, messaging compliance, domain reputation, and cold email execution.
           </p>
-        </section>
+        </motion.section>
 
-        <section className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-sm"
+        >
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 rounded-lg bg-zinc-800 text-cyan-400">
               <RefreshCw size={18} />
@@ -89,9 +113,14 @@ function TermsContent() {
               <div className="text-zinc-400">Unlimited daily extractions, priority queue, CSV, JSON & XLSX export options.</div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
-        <section className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-sm"
+        >
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 rounded-lg bg-zinc-800 text-purple-400">
               <Lock size={18} />
@@ -104,9 +133,14 @@ function TermsContent() {
           <p>
             Aether Labs shall not be held liable for domain blacklisting, spam reports, or legal proceedings resulting from aggressive outbound marketing activities.
           </p>
-        </section>
+        </motion.section>
 
-        <section className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-sm"
+        >
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 rounded-lg bg-zinc-800 text-rose-400">
               <Scale size={18} />
@@ -116,18 +150,8 @@ function TermsContent() {
           <p>
             In no event shall Aether Labs, its developers, or affiliates be liable for any indirect, incidental, special, or consequential damages resulting from software downtime or data accuracy discrepancies.
           </p>
-        </section>
+        </motion.section>
       </div>
     </div>
   )
-}
-
-// Отключаем SSR для этого компонента при сборке
-const DynamicTerms = dynamic(() => Promise.resolve(TermsContent), {
-  ssr: false,
-  loading: () => <div className="min-h-screen bg-[#09090b]" />
-})
-
-export default function TermsPage() {
-  return <DynamicTerms />
 }
