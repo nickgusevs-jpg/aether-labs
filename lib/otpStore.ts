@@ -84,7 +84,7 @@ export async function sendOtp(email: string, code: string): Promise<void> {
 
   try {
     const { error } = await resend.emails.send({
-      from: 'AETHER LABS <onboarding@resend.dev>',
+      from: 'AETHER LABS <auth@aetherlabs.world>',
       to: normalizedEmail,
       subject: `${code} — Ваш код входа AETHER // LABS`,
       html: `
