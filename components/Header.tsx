@@ -1,10 +1,9 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Globe2, Menu, X } from 'lucide-react'
+import { Globe2, Menu, X, LogOut, User } from 'lucide-react'
 import Link from 'next/link'
-import { useSession, signOut } from 'next-auth/react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthModal } from '@/lib/authModalContext'
 import ThemeToggle from './ThemeToggle'
 
@@ -18,9 +17,34 @@ const LINKS = [
 ]
 
 export default function Header() {
-  const { data: session } = useSession()
   const { setOpen } = useAuthModal()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [user, setUser] = useState<{ email: string; username: string } | null>(null)
+
+  useEffect(() => {
+    const checkUser = () => {
+      const saved = localStorage.getItem('aether_user')
+      if (saved) {
+        try {
+          setUser(JSON.parse(saved))
+        } catch (e) {
+          setUser(null)
+        }
+      } else {
+        setUser(null)
+      }
+    }
+
+    checkUser()
+    window.addEventListener('aether_auth_change', checkUser)
+    return () => window.removeEventListener('aether_auth_change', checkUser)
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem('aether_user')
+    setUser(null)
+    window.dispatchEvent(new Event('aether_auth_change'))
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/5 bg-base/70 backdrop-blur-xl dark:bg-base/70 [html.light_&]:bg-white/70">
@@ -44,15 +68,19 @@ export default function Header() {
 
         <div className="hidden items-center gap-3 md:flex">
           <ThemeToggle />
-          {session ? (
+          {user ? (
             <div className="flex items-center gap-3">
-              <span className="text-sm text-white/70">{session.user?.email}</span>
+              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-cyan-400">
+                <User size={14} />
+                <span>{user.username}</span>
+              </div>
               <button
                 type="button"
-                onClick={() => signOut()}
-                className="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/30 hover:text-white"
+                onClick={handleLogout}
+                className="flex items-center gap-1 rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold text-white/70 transition hover:border-red-500/50 hover:text-red-400"
               >
-                Sign out
+                <LogOut size={14} />
+                Exit
               </button>
             </div>
           ) : (
@@ -88,7 +116,12 @@ export default function Header() {
             ))}
             <div className="mt-2 flex items-center justify-between px-3">
               <ThemeToggle />
-              {!session && (
+              {user ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-cyan-400">{user.username}</span>
+                  <button type="button" onClick={handleLogout} className="text-xs text-red-400">Exit</button>
+                </div>
+              ) : (
                 <button
                   type="button"
                   onClick={() => { setOpen(true); setMobileOpen(false) }}
