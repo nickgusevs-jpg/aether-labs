@@ -1,162 +1,127 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { CreditCard, Check, ChevronDown, Lock, ShieldCheck } from 'lucide-react'
+import { Check, ShieldCheck, MessageCircle, Send, ArrowLeft } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
-
-const COUNTRIES = [
-  { code: 'US', name: 'United States', flag: '🇺🇸' },
-  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
-  { code: 'DE', name: 'Germany', flag: '🇩🇪' },
-  { code: 'FR', name: 'France', flag: '🇫🇷' },
-  { code: 'CA', name: 'Canada', flag: '🇨🇦' },
-  { code: 'AU', name: 'Australia', flag: '🇦🇺' },
-  { code: 'UA', name: 'Ukraine', flag: '🇺🇦' },
-  { code: 'KZ', name: 'Kazakhstan', flag: '🇰🇿' },
-  { code: 'PL', name: 'Poland', flag: '🇵🇱' },
-  { code: 'AE', name: 'United Arab Emirates', flag: '🇦🇪' },
-]
+import Link from 'next/link'
+import { PLANS } from '@/lib/plans'
 
 export default function PayForm() {
   const searchParams = useSearchParams()
-  const planParam = searchParams.get('plan') || 'pro'
+  const planId = searchParams.get('plan') || 'monthly'
 
-  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0])
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
+  // Ищем тариф в PLANS по id, если не найден — берем про запас 3-й тариф
+  const currentPlan = PLANS.find((p) => p.id === planId) || PLANS[2]
 
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  // Шаблон текста сообщения для менеджера
+  const orderMessage = `Hello! I would like to order the "${currentPlan.name}" plan ($${currentPlan.price}) for AETHER // LABS.`
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      setSuccess(true)
-    }, 1500)
-  }
+  // Прямые ссылки на мессенджеры
+  const telegramUrl = `https://t.me/aether_axel?text=${encodeURIComponent(orderMessage)}`
+  const whatsappUrl = `https://api.whatsapp.com/send?phone=37127099333&text=${encodeURIComponent(orderMessage)}`
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-12 sm:px-8">
-      <div className="glass rounded-2xl p-6 sm:p-10 shadow-2xl relative">
+      {/* Кнопка «Назад к тарифам» */}
+      <Link 
+        href="/#pricing" 
+        className="inline-flex items-center gap-2 text-xs text-white/60 hover:text-white transition mb-6"
+      >
+        <ArrowLeft size={14} /> Back to Pricing
+      </Link>
+
+      <div className="glass rounded-2xl p-6 sm:p-10 shadow-2xl relative border border-white/10">
         <h1 className="text-2xl font-black tracking-tight sm:text-3xl mb-2">
-          Complete Your Order
+          Checkout & Activation
         </h1>
-        <p className="text-sm text-white/60 [html.light_&]:text-slate-600 mb-8">
-          Selected Plan: <span className="font-bold text-neon-cyan uppercase">{planParam}</span>
+        <p className="text-sm text-white/60 mb-8">
+          Complete your order via instant support in Telegram or WhatsApp.
         </p>
 
-        {success ? (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
-            <ShieldCheck size={56} className="mx-auto text-neon-emerald mb-4 animate-bounce" />
-            <h3 className="text-xl font-bold">Payment Successful!</h3>
-            <p className="text-sm text-white/60 [html.light_&]:text-slate-600 mt-2">
-              Your license key and HWID activation details have been sent to your email.
-            </p>
-          </motion.div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Карточка с деталями выбранного плана */}
+        <div className="rounded-xl border border-neon-cyan/30 bg-neon-cyan/5 p-5 mb-8">
+          <div className="flex items-center justify-between">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-white/60 [html.light_&]:text-slate-700 mb-2">
-                Cardholder Name
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="John Doe"
-                className="w-full rounded-xl border border-white/15 bg-black/20 [html.light_&]:bg-slate-100 [html.light_&]:border-slate-300 [html.light_&]:text-slate-900 px-4 py-3 text-sm outline-none focus:border-neon-cyan"
-              />
+              <span className="text-xs uppercase tracking-wider text-neon-cyan font-bold">Selected Plan</span>
+              <h3 className="text-xl font-extrabold text-white mt-1">{currentPlan.name}</h3>
             </div>
-
-            {/* COUNTRY SELECTOR WITH CORRECT Z-INDEX & DROPDOWN */}
-            <div className="relative z-30" ref={dropdownRef}>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-white/60 [html.light_&]:text-slate-700 mb-2">
-                Billing Country / Region
-              </label>
-              
-              <button
-                type="button"
-                onClick={() => setDropdownOpen((v) => !v)}
-                className="w-full flex items-center justify-between rounded-xl border border-white/15 bg-black/20 [html.light_&]:bg-slate-100 [html.light_&]:border-slate-300 [html.light_&]:text-slate-900 px-4 py-3 text-sm outline-none hover:border-white/30"
-              >
-                <span className="flex items-center gap-2">
-                  <span>{selectedCountry.flag}</span>
-                  <span>{selectedCountry.name}</span>
-                </span>
-                <ChevronDown size={16} className={`transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              <AnimatePresence>
-                {dropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    className="absolute left-0 right-0 top-full mt-2 z-50 max-h-56 overflow-y-auto rounded-xl border border-white/15 bg-slate-900 [html.light_&]:bg-white [html.light_&]:border-slate-300 shadow-2xl p-1"
-                  >
-                    {COUNTRIES.map((country) => (
-                      <button
-                        key={country.code}
-                        type="button"
-                        onClick={() => {
-                          setSelectedCountry(country)
-                          setDropdownOpen(false)
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-lg transition ${
-                          selectedCountry.code === country.code
-                            ? 'bg-neon-cyan/20 text-neon-cyan font-bold'
-                            : 'hover:bg-white/10 [html.light_&:hover]:bg-slate-100 text-white/80 [html.light_&]:text-slate-800'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span>{country.flag}</span>
-                          <span>{country.name}</span>
-                        </span>
-                        {selectedCountry.code === country.code && <Check size={14} />}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            <div className="text-right">
+              <span className="text-3xl font-black text-white">${currentPlan.price}</span>
+              <span className="text-xs text-white/50 block">{currentPlan.period}</span>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-white/60 [html.light_&]:text-slate-700 mb-2">
-                Card Details
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  placeholder="4532 •••• •••• 8892"
-                  className="w-full rounded-xl border border-white/15 bg-black/20 [html.light_&]:bg-slate-100 [html.light_&]:border-slate-300 [html.light_&]:text-slate-900 px-4 py-3 text-sm outline-none focus:border-neon-cyan pr-10"
-                />
-                <CreditCard size={18} className="absolute right-3 top-3.5 text-white/40 [html.light_&]:text-slate-400" />
+          <hr className="border-white/10 my-4" />
+
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-white/80">
+            {currentPlan.features.map((f) => (
+              <li key={f} className="flex items-center gap-2">
+                <Check size={14} className="text-neon-emerald shrink-0" />
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Выбор мессенджера для оплаты */}
+        <div className="space-y-4">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-white/60 mb-2">
+            Select payment method & Contact Manager
+          </label>
+
+          {/* Кнопка Telegram */}
+          <a
+            href={telegramUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-between rounded-xl bg-[#229ED9]/15 border border-[#229ED9]/40 p-4 transition-all hover:bg-[#229ED9]/25 hover:border-[#229ED9] group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-[#229ED9] p-2.5 text-white">
+                <Send size={20} />
+              </div>
+              <div className="text-left">
+                <h4 className="text-sm font-bold text-white group-hover:text-neon-cyan transition">
+                  Pay via Telegram
+                </h4>
+                <p className="text-xs text-white/60">Instant response • @aether_axel</p>
               </div>
             </div>
+            <span className="rounded-full bg-[#229ED9]/20 px-3 py-1 text-xs font-bold text-[#229ED9]">
+              Order Now →
+            </span>
+          </a>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-glow relative z-10 w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-neon-cyan to-neon-emerald py-4 text-sm font-bold text-black transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
-            >
-              <Lock size={16} />
-              {loading ? 'Processing Encrypted Payment...' : 'Proceed to Purchase'}
-            </button>
-          </form>
-        )}
+          {/* Кнопка WhatsApp */}
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-between rounded-xl bg-[#25D366]/15 border border-[#25D366]/40 p-4 transition-all hover:bg-[#25D366]/25 hover:border-[#25D366] group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-[#25D366] p-2.5 text-white">
+                <MessageCircle size={20} />
+              </div>
+              <div className="text-left">
+                <h4 className="text-sm font-bold text-white group-hover:text-neon-emerald transition">
+                  Pay via WhatsApp
+                </h4>
+                <p className="text-xs text-white/60">Fast activation • +371 27099333</p>
+              </div>
+            </div>
+            <span className="rounded-full bg-[#25D366]/20 px-3 py-1 text-xs font-bold text-[#25D366]">
+              Order Now →
+            </span>
+          </a>
+        </div>
+
+        {/* Гарантия безопасности */}
+        <div className="mt-8 flex items-center gap-3 text-xs text-white/50 border-t border-white/10 pt-6">
+          <ShieldCheck size={20} className="text-neon-emerald shrink-0" />
+          <p>
+            Instant activation after payment confirmation. Crypto, Cards, and direct transfers supported via manager.
+          </p>
+        </div>
       </div>
     </div>
   )
