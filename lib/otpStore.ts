@@ -7,10 +7,8 @@ interface OtpRecord {
   attempts: number
 }
 
-// Хранилище кодов в памяти
 const store = new Map<string, OtpRecord>()
 
-// Периодическая очистка просроченных кодов (раз в 5 минут)
 if (typeof setInterval !== 'undefined') {
   setInterval(() => {
     const now = Date.now()
@@ -24,14 +22,10 @@ if (typeof setInterval !== 'undefined') {
 
 const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_key_for_build")
 
-/**
- * Генерирует 6-значный OTP код для email
- */
 export function issue(email: string): string {
   const normalizedEmail = email.toLowerCase().trim()
-  
   const code = crypto.randomInt(100000, 1000000).toString()
-  const expiresAt = Date.now() + 10 * 60 * 1000 // 10 минут
+  const expiresAt = Date.now() + 10 * 60 * 1000
 
   store.set(normalizedEmail, { 
     code, 
@@ -42,9 +36,6 @@ export function issue(email: string): string {
   return code
 }
 
-/**
- * Проверяет введенный пользователем код
- */
 export function verify(email: string, code: string): 'ok' | 'invalid' | 'expired' {
   const normalizedEmail = email.toLowerCase().trim()
   const record = store.get(normalizedEmail)
@@ -70,9 +61,6 @@ export function verify(email: string, code: string): 'ok' | 'invalid' | 'expired
   return 'ok'
 }
 
-/**
- * Отправляет письмо с кодом через Resend API
- */
 export async function sendOtp(email: string, code: string): Promise<void> {
   const normalizedEmail = email.toLowerCase().trim()
 
@@ -80,39 +68,35 @@ export async function sendOtp(email: string, code: string): Promise<void> {
   console.log(`[OTP CODE]: ${code}  ==>  ${normalizedEmail}`)
   console.log(`========================================\n`)
 
-  if (process.env.OTP_DEBUG_LOG === 'true') {
-    return
-  }
-
   if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_dummy_key_for_build') {
-    console.warn('[OTP WARNING] RESEND_API_KEY is missing or dummy. Code printed above in console.')
+    console.warn('[OTP WARNING] RESEND_API_KEY is missing or dummy.')
     return
   }
 
   try {
-    // Используем стандартный рабочий адрес от Resend: onboarding@resend.dev
     const { data, error } = await resend.emails.send({
-      from: 'AETHER LABS <onboarding@resend.dev>',
+      from: 'AETHER LABS <auth@aetherlabs.world>',
       to: normalizedEmail,
-      subject: `${code} — Ваш код входа AETHER // LABS`,
+      subject: `Your verification code: ${code}`,
+      text: `Your verification code is: ${code}. It expires in 10 minutes.`,
       html: `
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #0f172a; color: #ffffff;">
-          <h2 style="color: #22d3ee; margin-top: 0;">AETHER // LABS</h2>
-          <p style="font-size: 15px; color: #cbd5e1;">Используйте этот одноразовый код для входа в аккаунт:</p>
-          <div style="background: rgba(34, 211, 238, 0.1); border: 1px solid #22d3ee; border-radius: 8px; padding: 16px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #34d399; margin: 20px 0;">
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>AETHER LABS</h2>
+          <p>Your verification code:</p>
+          <div style="font-size: 28px; font-weight: bold; letter-spacing: 4px; padding: 12px; background: #f1f5f9; text-align: center; border-radius: 6px;">
             ${code}
           </div>
-          <p style="font-size: 13px; color: #64748b;">Код действителен 10 минут. Если вы не запрашивали этот код, просто проигнорируйте письмо.</p>
+          <p style="font-size: 12px; color: #64748b; margin-top: 16px;">Valid for 10 minutes.</p>
         </div>
       `
     })
 
     if (error) {
-      console.error('[RESEND SEND ERROR]:', JSON.stringify(error, null, 2))
+      console.error('[RESEND ERROR]:', error)
     } else {
-      console.log('[RESEND SUCCESS]: Email sent successfully. ID:', data?.id)
+      console.log('[RESEND SUCCESS]: ID:', data?.id)
     }
   } catch (error) {
-    console.error('Ошибка отправки OTP через Resend:', error)
+    console.error('Ошибка отправки OTP:', error)
   }
 }
