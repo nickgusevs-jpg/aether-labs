@@ -30,7 +30,6 @@ const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_key_for_build"
 export function issue(email: string): string {
   const normalizedEmail = email.toLowerCase().trim()
   
-  // Криптографически безопасная генерация 6 цифр
   const code = crypto.randomInt(100000, 1000000).toString()
   const expiresAt = Date.now() + 10 * 60 * 1000 // 10 минут
 
@@ -72,12 +71,11 @@ export function verify(email: string, code: string): 'ok' | 'invalid' | 'expired
 }
 
 /**
- * Отправляет реальное письмо с кодом через Resend API
+ * Отправляет письмо с кодом через Resend API
  */
 export async function sendOtp(email: string, code: string): Promise<void> {
   const normalizedEmail = email.toLowerCase().trim()
 
-  // Всегда выводим код в консоль сервера для удобства отладки
   console.log(`\n========================================`)
   console.log(`[OTP CODE]: ${code}  ==>  ${normalizedEmail}`)
   console.log(`========================================\n`)
@@ -86,15 +84,15 @@ export async function sendOtp(email: string, code: string): Promise<void> {
     return
   }
 
-  // Если нет настоящего ключа Resend, не пытаемся отправлять через API
   if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_dummy_key_for_build') {
-    console.warn('[OTP WARNING] RESEND_API_KEY is missing or dummy. Code was logged above.')
+    console.warn('[OTP WARNING] RESEND_API_KEY is missing or dummy. Code printed above in console.')
     return
   }
 
   try {
-    const { error } = await resend.emails.send({
-      from: 'AETHER LABS <auth@aetherlabs.world>',
+    // Используем стандартный рабочий адрес от Resend: onboarding@resend.dev
+    const { data, error } = await resend.emails.send({
+      from: 'AETHER LABS <onboarding@resend.dev>',
       to: normalizedEmail,
       subject: `${code} — Ваш код входа AETHER // LABS`,
       html: `
@@ -110,7 +108,9 @@ export async function sendOtp(email: string, code: string): Promise<void> {
     })
 
     if (error) {
-      console.error('[Resend Error]:', error)
+      console.error('[RESEND SEND ERROR]:', JSON.stringify(error, null, 2))
+    } else {
+      console.log('[RESEND SUCCESS]: Email sent successfully. ID:', data?.id)
     }
   } catch (error) {
     console.error('Ошибка отправки OTP через Resend:', error)
