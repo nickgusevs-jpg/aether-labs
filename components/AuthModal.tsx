@@ -5,8 +5,9 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { X, Mail, KeyRound, User, ArrowRight, CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
 
 export default function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [step, setStep] = useState<'email' | 'code' | 'username' | 'success'>('email')
-  const [email, setEmail] = useState('')
+  const [step, setStep] = useState<'identifier' | 'code' | 'username' | 'success'>('identifier')
+  const [identifier, setIdentifier] = useState('')
+  const [targetEmail, setTargetEmail] = useState('')
   const [code, setCode] = useState('')
   const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(false)
@@ -26,11 +27,13 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
     }, 1000)
   }
 
-  // 1. Отправка OTP
+  // 1. Отправка OTP (работает по Email или Username)
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email || !email.includes('@')) {
-      setError('Please enter a valid email address')
+    const input = identifier.trim()
+
+    if (!input) {
+      setError('Please enter your email or username')
       return
     }
 
@@ -41,15 +44,16 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
       const res = await fetch('/api/auth/otp/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ identifier: input }),
       })
 
       const data = await res.json()
 
       if (!res.ok || !data.ok) {
-        throw new Error(data.error === 'invalid_email' ? 'Invalid email format' : 'Failed to send verification code')
+        throw new Error(data.error || 'Failed to send verification code')
       }
 
+      setTargetEmail(data.email || input)
       setStep('code')
       startTimer()
     } catch (err: any) {
@@ -74,19 +78,24 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
       const res = await fetch('/api/auth/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code }),
+        body: JSON.stringify({ email: targetEmail, code }),
       })
 
       const data = await res.json()
 
       if (!res.ok || !data.ok) {
-        throw new Error('Invalid or expired verification code')
+        throw new Error(data.error || 'Invalid or expired verification code')
       }
 
-      // Подставляем дефолтный username из почты
-      const defaultName = email.split('@')[0]
-      setUsername(defaultName)
-      setStep('username')
+      // Если username у юзера уже зарегистрирован — сразу завершаем
+      if (data.username) {
+        finishAuth({ email: targetEmail, username: data.username })
+      } else {
+        // Если юзера еще нет — просим ввести username
+        const defaultName = targetEmail.split('@')[0]
+        setUsername(defaultName)
+        setStep('username')
+      }
     } catch (err: any) {
       setError(err.message || 'Verification failed')
     } finally {
@@ -94,28 +103,57 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
     }
   }
 
-  // 3. Завершение регистрации / входа с Username
-  const handleCompleteLogin = (e: React.FormEvent) => {
+  // 3. Сохранение Username и проверка уникальности
+  const handleCompleteUsername = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!username.trim()) {
+    const cleanUsername = username.trim()
+
+    if (!cleanUsername) {
       setError('Please enter a username')
       return
     }
 
-    const userData = { email, username: username.trim() }
+    setLoading(true)
+    setError('')
+
+    try {
+      const res = await fetch('/api/auth/username/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: targetEmail, username: cleanUsername }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Username is already taken')
+      }
+
+      finishAuth({ email: targetEmail, username: cleanUsername })
+    } catch (err: any) {
+      setError(err.message || 'Failed to set username')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const finishAuth = (userData: { email: string; username: string }) => {
     localStorage.setItem('aether_user', JSON.stringify(userData))
     window.dispatchEvent(new Event('aether_auth_change'))
 
+    setUsername(userData.username)
     setStep('success')
+
     setTimeout(() => {
       handleReset()
       onClose()
-    }, 1000)
+    }, 1200)
   }
 
   const handleReset = () => {
-    setStep('email')
-    setEmail('')
+    setStep('identifier')
+    setIdentifier('')
+    setTargetEmail('')
     setCode('')
     setUsername('')
     setError('')
@@ -156,7 +194,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
 
             <div className="flex flex-col items-center text-center">
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
-                {step === 'email' && <Mail size={26} />}
+                {step === 'identifier' && <Mail size={26} />}
                 {step === 'code' && <KeyRound size={26} />}
                 {step === 'username' && <User size={26} />}
                 {step === 'success' && <CheckCircle2 size={26} className="text-emerald-400" />}
@@ -164,9 +202,9 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
 
               <h2 className="text-2xl font-bold tracking-wide">AETHER // LABS</h2>
               <p className="mt-1 text-sm text-white/60 [html.light_&]:text-slate-500">
-                {step === 'email' && 'Enter your email to sign in'}
-                {step === 'code' && `We sent a code to ${email}`}
-                {step === 'username' && 'Choose your display username'}
+                {step === 'identifier' && 'Enter your email or username to sign in'}
+                {step === 'code' && `We sent a code to ${targetEmail}`}
+                {step === 'username' && 'Choose your unique display username'}
                 {step === 'success' && 'Authentication successful!'}
               </p>
 
@@ -176,15 +214,15 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                 </div>
               )}
 
-              {/* Шаг 1: Email */}
-              {step === 'email' && (
+              {/* Step 1: Email or Username */}
+              {step === 'identifier' && (
                 <form onSubmit={handleSendOtp} className="mt-6 w-full space-y-4">
                   <input
-                    type="email"
+                    type="text"
                     required
-                    placeholder="name@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email or username"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-cyan-500 transition-colors [html.light_&]:bg-slate-100 [html.light_&]:text-slate-900 [html.light_&]:placeholder-slate-400"
                   />
                   <button
@@ -196,7 +234,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                       <Loader2 size={18} className="animate-spin" />
                     ) : (
                       <>
-                        <span>Continue with Email</span>
+                        <span>Continue</span>
                         <ArrowRight size={16} />
                       </>
                     )}
@@ -204,7 +242,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                 </form>
               )}
 
-              {/* Шаг 2: OTP Код */}
+              {/* Step 2: Code */}
               {step === 'code' && (
                 <form onSubmit={handleVerifyOtp} className="mt-6 w-full space-y-4">
                   <input
@@ -225,8 +263,8 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                   </button>
 
                   <div className="flex items-center justify-between text-xs text-white/50 pt-2 [html.light_&]:text-slate-500">
-                    <button type="button" onClick={() => setStep('email')} className="hover:underline">
-                      Change Email
+                    <button type="button" onClick={() => setStep('identifier')} className="hover:underline">
+                      Back
                     </button>
                     <button
                       type="button"
@@ -241,31 +279,38 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                 </form>
               )}
 
-              {/* Шаг 3: Ввод Username */}
+              {/* Step 3: Username */}
               {step === 'username' && (
-                <form onSubmit={handleCompleteLogin} className="mt-6 w-full space-y-4">
+                <form onSubmit={handleCompleteUsername} className="mt-6 w-full space-y-4">
                   <input
                     type="text"
                     required
-                    placeholder="Enter username"
+                    placeholder="Choose username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-cyan-500 transition-colors [html.light_&]:bg-slate-100 [html.light_&]:text-slate-900"
                   />
                   <button
                     type="submit"
-                    className="btn-glow flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-neon-cyan to-neon-emerald py-3 text-sm font-bold text-black hover:opacity-90 transition-opacity"
+                    disabled={loading}
+                    className="btn-glow flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-neon-cyan to-neon-emerald py-3 text-sm font-bold text-black hover:opacity-90 transition-opacity disabled:opacity-50"
                   >
-                    <span>Complete Sign In</span>
-                    <ArrowRight size={16} />
+                    {loading ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <>
+                        <span>Complete Sign In</span>
+                        <ArrowRight size={16} />
+                      </>
+                    )}
                   </button>
                 </form>
               )}
 
-              {/* Шаг 4: Успех */}
+              {/* Step 4: Success */}
               {step === 'success' && (
                 <div className="mt-6 py-4 text-emerald-400 font-medium">
-                  Welcome, {username}!
+                  Welcome back, {username}!
                 </div>
               )}
             </div>
